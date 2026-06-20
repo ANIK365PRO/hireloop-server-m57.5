@@ -39,6 +39,8 @@ async function run() {
     const companyCollection = database.collection("companies"); 
     const usersCollection = database.collection("user");  // for user collection
     const applicationsCollection = database.collection("applications") // for application
+    const planCollection = database.collection("plans")
+    const subscriptionCollection = database.collection("subscription")
 
 
 
@@ -96,7 +98,24 @@ async function run() {
     })
 
 
-    // No-8: for post job applications
+    
+    // application related apis
+
+    // No-9: for get applications   
+    app.get('/api/applications', async (req, res) => {
+            const query = {};
+            if (req.query.applicantId) {
+                query.applicantId = req.query.applicantId;
+            }
+            if (req.query.jobId) {
+                query.jobId = req.query.jobId;
+            }
+            const cursor = applicationsCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+    })
+
+    // No-8: for post applications
     app.post('/api/applications', async(req,res) =>{
 
       const application = req.body;
@@ -145,6 +164,86 @@ async function run() {
             // jodi result null hoy tahole empty object pathabo, jate frontend e error na ashe
             res.send(result || {})
     })
+
+
+     // plans 
+    app.get('/api/plans', async (req, res) => {
+            const query = {}
+            if (req.query.plan_id) {
+                query.plan_id = req.query.plan_id
+            }
+            const plan = await planCollection.findOne(query);
+            res.send(plan)
+    })
+
+      
+    // subscription 
+    app.post('/api/subscriptions', async (req, res) => {
+            const data = req.body;
+            const subsInfo = {
+                ...data,
+                createdAt: new Date()
+            }
+
+            console.log(data.planId)
+
+            const result = await subscriptionCollection.insertOne(subsInfo);
+
+            // // update the user plan information
+            const filter = { email: data.email };
+            // update the value of the 'quantity' field to 5
+            const updateDocument = {
+                $set: {
+                    plan: data.planId,
+                },
+            };
+
+            const updateResult = await usersCollection.updateOne(filter, updateDocument);
+            res.send(updateResult)
+    })
+
+
+
+    //database 
+    // const plans = [
+    //   {
+    //     "plan_id" : "seeker_free",
+    //     "name" : "Free",
+    //     "maxApplicationsPerMonth" : 3
+    //   },
+    //   {
+    //     "plan_id" : "seeker_pro",
+    //     "name" : "Pro",
+    //     "maxApplicationsPerMonth" : 30
+    //   },
+    //   {
+    //     "plan_id" : "seeker_premium",
+    //     "name" : "Premium",
+    //     "maxApplicationsPerMonth" : 100
+    //   },
+    //   {
+    //     "plan_id" : "recruiter_free",
+    //     "name" : "Free",
+    //     "maxApplicationsPerMonth" : 3
+    //   },
+    //   {
+    //     "plan_id" : "recruiter_growth",
+    //     "name" : "Growth",
+    //     "maxApplicationsPerMonth" : 3
+    //   },
+    //   {
+    //     "plan_id" : "recruiter_enterprise",
+    //     "name" : "Enterprise",
+    //     "maxApplicationsPerMonth" : 3
+    //   },
+     
+      
+
+    // ]
+
+
+
+
 
 
 
