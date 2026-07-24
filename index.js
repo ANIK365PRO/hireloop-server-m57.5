@@ -4,9 +4,9 @@ dns.setServers(['8.8.8.8', '8.8.4.4'])
 const express = require('express')
 const cors = require('cors')
 const app = express()
+
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-
 const port = process.env.PORT||5000;
 
 app.use(cors())
@@ -63,7 +63,7 @@ async function run() {
         query.status = req.query.status
       }
 
-      const cursor = jobsCollection.find(query).skip(10)
+      const cursor = jobsCollection.find(query)
       const result = await cursor.toArray()
 
       res.send(result)
@@ -130,11 +130,26 @@ async function run() {
 
     // for company api information
 
-    // No-6: get all companies information for created jobs
+    // No-6.1: get all companies information for created jobs
+    // app.get('/api/companies', async(req, res)=>{
+    //   const cursor = companyCollection.find()
+    //   const result = await cursor.toArray()
+    //   res.send(result)
+    // })
+
+ // No-6.2: get all companies information for created jobs and aggregate/pipeline for jobCount
     app.get('/api/companies', async(req, res)=>{
-      const cursor = companyCollection.find().skip(7)
-      const result = await cursor.toArray()
-      res.send(result)
+      const cursor = companyCollection.find()
+      const companies = await cursor.toArray()
+
+      for (const company of companies){
+        const filter = { companyId: company._id.toString() }
+        const jobCount = await jobsCollection.countDocuments(filter)
+        company.jobCount = jobCount
+      }
+
+
+      res.send(companies)
     })
 
     // No-4: for company related api
@@ -165,8 +180,23 @@ async function run() {
             res.send(result || {})
     })
 
+    // No-12: for admin approval patch
+    app.patch('/api/companies/:id', async(req, res)=>{
+      const id = req.params.id
+      const updatedCompany = req.body
+      const filter = {_id:new ObjectId(id)}
+      const updatedDoc = {
+        $set : {
+          status : updatedCompany.status
+        }
+      }
 
-     // plans 
+      const result = await companyCollection.updateOne(filter, updatedDoc)
+      res.send(result)
+    })
+
+
+     //No-10: plans 
     app.get('/api/plans', async (req, res) => {
             const query = {}
             if (req.query.plan_id) {
@@ -177,7 +207,7 @@ async function run() {
     })
 
       
-    // subscription 
+    //No-11: subscription 
     app.post('/api/subscriptions', async (req, res) => {
             const data = req.body;
             const subsInfo = {
